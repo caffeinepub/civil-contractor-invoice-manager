@@ -52,6 +52,7 @@ import {
   useCreateRoom,
   useGetAllClients,
 } from "../hooks/useQueries";
+import { type DocumentType, setDocumentType } from "../utils/documentType";
 import { formatINR } from "../utils/format";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -419,6 +420,7 @@ export default function NewInvoicePage() {
   const [rooms, setRooms] = useState<LocalRoom[]>([]);
   const [customRoomName, setCustomRoomName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [docType, setDocType] = useState<DocumentType>("Invoice");
 
   // Item dialog state
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
@@ -512,6 +514,9 @@ export default function NewInvoicePage() {
     try {
       const invoiceId = await createInvoice.mutateAsync(selectedClient.id);
 
+      // Persist document type locally
+      setDocumentType(invoiceId, docType);
+
       for (const room of rooms) {
         const roomId = await createRoom.mutateAsync({
           invoiceId,
@@ -528,7 +533,7 @@ export default function NewInvoicePage() {
         }
       }
 
-      toast.success("Invoice created successfully!");
+      toast.success(`${docType} created successfully!`);
       void navigate({ to: `/invoices/${invoiceId.toString()}` });
     } catch {
       toast.error("Failed to save invoice. Please try again.");
@@ -932,9 +937,46 @@ export default function NewInvoicePage() {
                 Review &amp; Save
               </h2>
               <p className="text-muted-foreground text-sm">
-                Review your invoice before saving
+                Choose document type and review before saving
               </p>
             </div>
+
+            {/* Document Type Toggle */}
+            <Card className="shadow-card border-border/60">
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  Document Type
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    data-ocid="new_invoice.doc_type_invoice_toggle"
+                    onClick={() => setDocType("Invoice")}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all font-medium text-sm ${
+                      docType === "Invoice"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span className="text-lg">🧾</span>
+                    Invoice
+                  </button>
+                  <button
+                    type="button"
+                    data-ocid="new_invoice.doc_type_quotation_toggle"
+                    onClick={() => setDocType("Quotation")}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all font-medium text-sm ${
+                      docType === "Quotation"
+                        ? "border-amber-500 bg-amber-50 text-amber-700"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span className="text-lg">📋</span>
+                    Quotation
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card className="shadow-card border-border/60">
               <CardHeader className="px-4 py-3 pb-2">
@@ -1020,7 +1062,7 @@ export default function NewInvoicePage() {
                     Saving...
                   </>
                 ) : (
-                  "Save Invoice"
+                  `Save ${docType}`
                 )}
               </Button>
             </div>

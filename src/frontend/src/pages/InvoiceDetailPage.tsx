@@ -50,6 +50,7 @@ import {
   useGetRoomsByInvoiceId,
 } from "../hooks/useQueries";
 import { getCompanyProfile } from "../utils/companyProfile";
+import { getDocumentType } from "../utils/documentType";
 import { formatDate, formatINR } from "../utils/format";
 
 // ── Room items section ────────────────────────────────────────────────────
@@ -297,6 +298,8 @@ export default function InvoiceDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const companyProfile = getCompanyProfile();
   const hasCompanyInfo = !!(companyProfile.name || companyProfile.logo);
+  const docType = invoice ? getDocumentType(invoice.id) : "Invoice";
+  const isQuotation = docType === "Quotation";
 
   const isLoading = invoiceLoading || roomsLoading || clientLoading;
 
@@ -332,7 +335,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <AppLayout
-      title={invoice?.billingNumber ?? "Invoice"}
+      title={invoice?.billingNumber ?? docType}
       showBack
       rightAction={printButton}
     >
@@ -407,8 +410,14 @@ export default function InvoiceDetailPage() {
                         {formatDate(invoice.createdAt)}
                       </p>
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 font-medium">
-                      Invoice
+                    <Badge
+                      className={`font-medium ${
+                        isQuotation
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-primary/10 text-primary border-primary/20"
+                      }`}
+                    >
+                      {docType}
                     </Badge>
                   </div>
 
@@ -417,7 +426,7 @@ export default function InvoiceDetailPage() {
                   {client && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Billed To
+                        {isQuotation ? "Quoted To" : "Billed To"}
                       </p>
                       <p className="font-display font-semibold text-foreground">
                         {client.name}
@@ -588,7 +597,7 @@ export default function InvoiceDetailPage() {
                       letterSpacing: "-0.5pt",
                     }}
                   >
-                    INVOICE
+                    {docType.toUpperCase()}
                   </div>
                   <div
                     style={{
@@ -627,7 +636,7 @@ export default function InvoiceDetailPage() {
                         marginBottom: "4pt",
                       }}
                     >
-                      Billed To
+                      {isQuotation ? "Quoted To" : "Billed To"}
                     </div>
                     <div style={{ fontWeight: 700, fontSize: "10pt" }}>
                       {client.name}
@@ -683,7 +692,7 @@ export default function InvoiceDetailPage() {
                       marginBottom: "4pt",
                     }}
                   >
-                    Invoice Details
+                    {docType} Details
                   </div>
                   <table
                     style={{
@@ -701,7 +710,7 @@ export default function InvoiceDetailPage() {
                             width: "50%",
                           }}
                         >
-                          Invoice No.
+                          {docType} No.
                         </td>
                         <td
                           style={{

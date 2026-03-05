@@ -30,6 +30,7 @@ import {
   useGetAllClients,
   useGetAllInvoices,
 } from "../hooks/useQueries";
+import { getDocumentType } from "../utils/documentType";
 import { formatDate, formatINR } from "../utils/format";
 
 function InvoiceCard({
@@ -45,6 +46,9 @@ function InvoiceCard({
   onView: () => void;
   onDelete: () => void;
 }) {
+  const docType = getDocumentType(invoice.id);
+  const isQuotation = docType === "Quotation";
+
   return (
     <Card
       data-ocid={`invoices.item.${index}`}
@@ -53,8 +57,12 @@ function InvoiceCard({
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <FileText className="h-5 w-5 text-emerald-600" />
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isQuotation ? "bg-amber-50" : "bg-emerald-50"}`}
+          >
+            <FileText
+              className={`h-5 w-5 ${isQuotation ? "text-amber-600" : "text-emerald-600"}`}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -66,9 +74,13 @@ function InvoiceCard({
               </div>
               <Badge
                 variant="outline"
-                className="text-[10px] px-1.5 py-0 h-4 font-medium text-emerald-600 border-emerald-200 bg-emerald-50 flex-shrink-0"
+                className={`text-[10px] px-1.5 py-0 h-4 font-medium flex-shrink-0 ${
+                  isQuotation
+                    ? "text-amber-700 border-amber-200 bg-amber-50"
+                    : "text-emerald-600 border-emerald-200 bg-emerald-50"
+                }`}
               >
-                Invoice
+                {docType}
               </Badge>
             </div>
             <p className="text-sm text-foreground font-medium truncate">
@@ -187,7 +199,7 @@ export default function InvoicesPage() {
           <>
             <div className="flex items-center justify-between py-1">
               <p className="text-sm text-muted-foreground">
-                {sortedInvoices.length} invoice
+                {sortedInvoices.length} document
                 {sortedInvoices.length !== 1 ? "s" : ""}
               </p>
             </div>
