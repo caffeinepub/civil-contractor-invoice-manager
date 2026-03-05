@@ -28,13 +28,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "@tanstack/react-router";
 import {
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Home,
   IndianRupee,
   Loader2,
   Pencil,
   Plus,
+  Search,
   Trash2,
   User,
 } from "lucide-react";
@@ -42,6 +45,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { Client } from "../backend.d";
 import AppLayout from "../components/AppLayout";
+import { PRESET_ITEMS } from "../data/presetItems";
 import {
   useCreateInvoice,
   useCreateItem,
@@ -153,6 +157,26 @@ function ItemFormDialog({
   const [unit, setUnit] = useState(editItem?.unit ?? "sq ft");
   const [rate, setRate] = useState(editItem?.rate?.toString() ?? "");
 
+  // Preset section state
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetSearch, setPresetSearch] = useState("");
+  const [selectedPresetIdx, setSelectedPresetIdx] = useState<number | null>(
+    null,
+  );
+
+  const filteredPresets = PRESET_ITEMS.filter((p) =>
+    p.description.toLowerCase().includes(presetSearch.toLowerCase()),
+  );
+
+  const handleSelectPreset = (idx: number) => {
+    const preset = filteredPresets[idx];
+    if (!preset) return;
+    setDescription(preset.description);
+    setUnit(preset.unit);
+    setRate(preset.rate.toString());
+    setSelectedPresetIdx(idx);
+  };
+
   const qtyNum = Number.parseFloat(quantity) || 0;
   const rateNum = Number.parseFloat(rate) || 0;
   const amount = qtyNum * rateNum;
@@ -164,6 +188,9 @@ function ItemFormDialog({
       setQuantity("");
       setUnit("sq ft");
       setRate("");
+      setPresetSearch("");
+      setSelectedPresetIdx(null);
+      setPresetOpen(false);
     }
   };
 
@@ -197,6 +224,106 @@ function ItemFormDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {/* Preset Items Toggle */}
+          <div className="border border-border/60 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              data-ocid="items.preset_toggle_button"
+              onClick={() => setPresetOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 transition-colors text-sm font-medium text-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <Search className="h-3.5 w-3.5 text-primary" />
+                Browse Presets
+              </span>
+              {presetOpen ? (
+                <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </button>
+
+            {presetOpen && (
+              <div className="border-t border-border/40">
+                {/* Search input */}
+                <div className="px-2 py-2 border-b border-border/30">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      data-ocid="items.preset_search_input"
+                      placeholder="Search items..."
+                      value={presetSearch}
+                      onChange={(e) => {
+                        setPresetSearch(e.target.value);
+                        setSelectedPresetIdx(null);
+                      }}
+                      className="h-8 pl-8 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Preset table */}
+                <div
+                  data-ocid="items.preset_table"
+                  className="overflow-y-auto max-h-[200px]"
+                >
+                  {filteredPresets.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No presets match your search
+                    </p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-card border-b border-border/30">
+                        <tr>
+                          <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">
+                            Description
+                          </th>
+                          <th className="text-left py-1.5 px-1 font-medium text-muted-foreground whitespace-nowrap">
+                            Unit
+                          </th>
+                          <th className="text-right py-1.5 px-2 font-medium text-muted-foreground">
+                            Rate (₹)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPresets.map((preset, idx) => (
+                          <tr
+                            key={preset.description}
+                            onClick={() => handleSelectPreset(idx)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSelectPreset(idx);
+                              }
+                            }}
+                            tabIndex={0}
+                            aria-selected={selectedPresetIdx === idx}
+                            className={`cursor-pointer border-b border-border/20 transition-colors ${
+                              selectedPresetIdx === idx
+                                ? "bg-primary/10 text-primary"
+                                : "hover:bg-muted/40"
+                            }`}
+                          >
+                            <td className="py-1.5 px-2 leading-snug">
+                              {preset.description}
+                            </td>
+                            <td className="py-1.5 px-1 text-muted-foreground whitespace-nowrap">
+                              {preset.unit}
+                            </td>
+                            <td className="py-1.5 px-2 text-right font-medium">
+                              {preset.rate.toLocaleString("en-IN")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Description</Label>
             <Input

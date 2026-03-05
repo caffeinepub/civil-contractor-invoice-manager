@@ -149,6 +149,11 @@
 }
 
 /* Print styles */
+@page {
+  size: A4 portrait;
+  margin: 15mm 15mm 20mm 15mm;
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -158,17 +163,53 @@
     display: block !important;
   }
 
-  body {
+  html, body {
     background: white !important;
-    font-size: 12px;
+    font-size: 11pt;
+    color: #000 !important;
+    width: 210mm;
   }
 
   .app-container {
     max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   .print-invoice {
-    padding: 16px;
+    width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Avoid breaking rooms across pages */
+  .print-room-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force black text for all print content */
+  .print-invoice * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Keep table borders visible */
+  .print-invoice table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .print-invoice th,
+  .print-invoice td {
+    padding: 4pt 6pt;
+    font-size: 9pt;
+  }
+
+  .print-invoice thead tr {
+    background-color: #f3f4f6 !important;
   }
 }
 

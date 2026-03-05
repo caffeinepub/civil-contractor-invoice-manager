@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Settings,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -36,6 +37,12 @@ const navItems = [
     label: "History",
     icon: FileText,
     ocid: "nav.history_link",
+  },
+  {
+    path: "/settings",
+    label: "Settings",
+    icon: Settings,
+    ocid: "nav.settings_link",
   },
 ];
 

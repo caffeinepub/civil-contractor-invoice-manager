@@ -49,6 +49,7 @@ import {
   useGetItemsByRoomId,
   useGetRoomsByInvoiceId,
 } from "../hooks/useQueries";
+import { getCompanyProfile } from "../utils/companyProfile";
 import { formatDate, formatINR } from "../utils/format";
 
 // ── Room items section ────────────────────────────────────────────────────
@@ -121,43 +122,156 @@ function RoomItemsSection({ room }: { room: Room }) {
 
 // ── Print-friendly room section ───────────────────────────────────────────
 
-function PrintRoomSection({ room }: { room: Room }) {
+function PrintRoomSection({
+  room,
+  startIndex,
+}: { room: Room; startIndex: number }) {
   const { data: items } = useGetItemsByRoomId(room.id);
 
   return (
-    <div className="print-room-section mb-6">
-      <h3 className="font-semibold text-sm border-b border-gray-300 pb-1 mb-2">
+    <div className="print-room-section mb-4">
+      <h3
+        style={{
+          fontWeight: 700,
+          fontSize: "10pt",
+          borderBottom: "1.5px solid #374151",
+          paddingBottom: "3pt",
+          marginBottom: "4pt",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+        }}
+      >
         {room.name}
       </h3>
-      <table className="w-full text-xs">
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", fontSize: "9pt" }}
+      >
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-1 font-medium">Description</th>
-            <th className="text-right py-1 font-medium">Qty</th>
-            <th className="text-left py-1 font-medium px-2">Unit</th>
-            <th className="text-right py-1 font-medium">Rate</th>
-            <th className="text-right py-1 font-medium">Amount</th>
+          <tr
+            style={{
+              backgroundColor: "#f9fafb",
+              borderBottom: "1px solid #d1d5db",
+            }}
+          >
+            <th
+              style={{
+                textAlign: "left",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                width: "28pt",
+              }}
+            >
+              Sr.
+            </th>
+            <th
+              style={{ textAlign: "left", padding: "4pt 5pt", fontWeight: 600 }}
+            >
+              Description
+            </th>
+            <th
+              style={{
+                textAlign: "right",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                width: "36pt",
+              }}
+            >
+              Qty
+            </th>
+            <th
+              style={{
+                textAlign: "left",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                width: "48pt",
+              }}
+            >
+              Unit
+            </th>
+            <th
+              style={{
+                textAlign: "right",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                width: "56pt",
+              }}
+            >
+              Rate (₹)
+            </th>
+            <th
+              style={{
+                textAlign: "right",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                width: "60pt",
+              }}
+            >
+              Amount (₹)
+            </th>
           </tr>
         </thead>
         <tbody>
-          {(items ?? []).map((item: Item) => (
-            <tr key={item.id.toString()} className="border-b border-gray-100">
-              <td className="py-1">{item.description}</td>
-              <td className="text-right py-1">{item.quantity}</td>
-              <td className="py-1 px-2 text-gray-500">{item.unit}</td>
-              <td className="text-right py-1">{formatINR(item.rate)}</td>
-              <td className="text-right py-1 font-medium">
+          {(items ?? []).map((item: Item, idx) => (
+            <tr
+              key={item.id.toString()}
+              style={{
+                borderBottom: "1px solid #e5e7eb",
+                backgroundColor: idx % 2 === 0 ? "#fff" : "#f9fafb",
+              }}
+            >
+              <td style={{ padding: "3pt 5pt", color: "#6b7280" }}>
+                {startIndex + idx}
+              </td>
+              <td style={{ padding: "3pt 5pt" }}>{item.description}</td>
+              <td style={{ textAlign: "right", padding: "3pt 5pt" }}>
+                {item.quantity}
+              </td>
+              <td style={{ padding: "3pt 5pt", color: "#6b7280" }}>
+                {item.unit}
+              </td>
+              <td style={{ textAlign: "right", padding: "3pt 5pt" }}>
+                {formatINR(item.rate)}
+              </td>
+              <td
+                style={{
+                  textAlign: "right",
+                  padding: "3pt 5pt",
+                  fontWeight: 600,
+                }}
+              >
                 {formatINR(item.amount)}
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t border-gray-300 font-semibold">
-            <td colSpan={4} className="py-1 text-right text-xs">
-              Subtotal:
+          <tr
+            style={{
+              borderTop: "1.5px solid #374151",
+              backgroundColor: "#f3f4f6",
+            }}
+          >
+            <td
+              colSpan={5}
+              style={{
+                textAlign: "right",
+                padding: "4pt 5pt",
+                fontWeight: 600,
+                fontSize: "9pt",
+              }}
+            >
+              Room Subtotal:
             </td>
-            <td className="text-right py-1">{formatINR(room.subtotal)}</td>
+            <td
+              style={{
+                textAlign: "right",
+                padding: "4pt 5pt",
+                fontWeight: 700,
+                fontSize: "9pt",
+              }}
+            >
+              {formatINR(room.subtotal)}
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -181,6 +295,8 @@ export default function InvoiceDetailPage() {
   const deleteInvoice = useDeleteInvoice();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const companyProfile = getCompanyProfile();
+  const hasCompanyInfo = !!(companyProfile.name || companyProfile.logo);
 
   const isLoading = invoiceLoading || roomsLoading || clientLoading;
 
@@ -247,6 +363,35 @@ export default function InvoiceDetailPage() {
           <>
             {/* ── Screen view (hidden when printing) ── */}
             <div className="no-print p-4 space-y-4">
+              {/* Company header card */}
+              {hasCompanyInfo && (
+                <Card className="shadow-card border-border/60 bg-gradient-to-br from-primary/5 to-background">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      {companyProfile.logo && (
+                        <img
+                          src={companyProfile.logo}
+                          alt="Company logo"
+                          className="h-12 w-auto max-w-[80px] object-contain rounded-lg flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        {companyProfile.name && (
+                          <p className="font-display font-bold text-foreground text-base leading-tight">
+                            {companyProfile.name}
+                          </p>
+                        )}
+                        {companyProfile.address && (
+                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap line-clamp-3">
+                            {companyProfile.address}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Invoice header */}
               <Card className="shadow-card border-border/60 bg-gradient-to-br from-primary/5 to-background">
                 <CardContent className="p-4">
@@ -372,62 +517,295 @@ export default function InvoiceDetailPage() {
               </Button>
             </div>
 
-            {/* ── Print-only view ── */}
-            <div className="print-invoice hidden print:block p-6">
-              <div className="text-center mb-6 pb-4 border-b-2 border-gray-800">
-                <h1 className="text-xl font-bold">CIVIL CONTRACTOR INVOICE</h1>
-                <p className="text-gray-500 text-sm mt-0.5">
-                  Professional Construction &amp; Civil Work
-                </p>
-              </div>
-
-              <div className="flex justify-between mb-6">
-                <div>
-                  <p className="font-semibold text-sm uppercase text-gray-500 mb-1">
-                    Invoice No.
-                  </p>
-                  <p className="font-bold text-base">{invoice.billingNumber}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-sm uppercase text-gray-500 mb-1">
-                    Date
-                  </p>
-                  <p className="font-bold text-base">
-                    {formatDate(invoice.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              {client && (
-                <div className="mb-6 p-3 bg-gray-50 rounded border border-gray-200">
-                  <p className="font-semibold text-xs uppercase text-gray-500 mb-2">
-                    Billed To
-                  </p>
-                  <p className="font-bold text-sm">{client.name}</p>
-                  <p className="text-sm text-gray-600">{client.mobile}</p>
-                  {client.address && (
-                    <p className="text-sm text-gray-600">{client.address}</p>
+            {/* ── Print-only view (A4) ── */}
+            <div
+              className="print-invoice hidden print:block"
+              style={{ fontFamily: "Arial, sans-serif", color: "#000" }}
+            >
+              {/* Company header */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12pt",
+                  marginBottom: "10pt",
+                  paddingBottom: "8pt",
+                  borderBottom: "2px solid #111827",
+                }}
+              >
+                {companyProfile.logo && (
+                  <img
+                    src={companyProfile.logo}
+                    alt="Company logo"
+                    style={{
+                      height: "52pt",
+                      width: "auto",
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <div style={{ flex: 1 }}>
+                  {companyProfile.name ? (
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "16pt",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {companyProfile.name}
+                    </div>
+                  ) : (
+                    <div style={{ fontWeight: 700, fontSize: "16pt" }}>
+                      CIVIL CONTRACTOR
+                    </div>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Client Ref: {client.billingNumber}
-                  </p>
+                  {companyProfile.address && (
+                    <div
+                      style={{
+                        fontSize: "8.5pt",
+                        color: "#4b5563",
+                        marginTop: "2pt",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {companyProfile.address}
+                    </div>
+                  )}
+                  {!companyProfile.address && (
+                    <div style={{ fontSize: "8.5pt", color: "#6b7280" }}>
+                      Professional Construction &amp; Civil Work
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {rooms?.map((room: Room) => (
-                <PrintRoomSection key={room.id.toString()} room={room} />
-              ))}
-
-              <div className="border-t-2 border-gray-800 pt-3 mt-6 flex justify-between items-center">
-                <span className="font-bold text-base">GRAND TOTAL</span>
-                <span className="font-bold text-xl">
-                  {formatINR(Number(invoice.grandTotal))}
-                </span>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "20pt",
+                      fontWeight: 800,
+                      color: "#111827",
+                      letterSpacing: "-0.5pt",
+                    }}
+                  >
+                    INVOICE
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "9pt",
+                      color: "#6b7280",
+                      marginTop: "2pt",
+                    }}
+                  >
+                    #{invoice.billingNumber}
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-                <p>Generated by Civil Invoice Manager</p>
-                <p className="mt-0.5">Thank you for your business!</p>
+              {/* Invoice meta + Billed To */}
+              <div
+                style={{ display: "flex", gap: "16pt", marginBottom: "10pt" }}
+              >
+                {/* Billed To */}
+                {client && (
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "8pt",
+                      backgroundColor: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "4pt",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "7pt",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "#6b7280",
+                        marginBottom: "4pt",
+                      }}
+                    >
+                      Billed To
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "10pt" }}>
+                      {client.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "8.5pt",
+                        color: "#4b5563",
+                        marginTop: "2pt",
+                      }}
+                    >
+                      {client.mobile}
+                    </div>
+                    {client.address && (
+                      <div
+                        style={{
+                          fontSize: "8.5pt",
+                          color: "#4b5563",
+                          marginTop: "1pt",
+                        }}
+                      >
+                        {client.address}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        fontSize: "7.5pt",
+                        color: "#9ca3af",
+                        marginTop: "3pt",
+                      }}
+                    >
+                      Client Ref: {client.billingNumber}
+                    </div>
+                  </div>
+                )}
+                {/* Invoice details */}
+                <div
+                  style={{
+                    width: "140pt",
+                    padding: "8pt",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "4pt",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "7pt",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      color: "#6b7280",
+                      marginBottom: "4pt",
+                    }}
+                  >
+                    Invoice Details
+                  </div>
+                  <table
+                    style={{
+                      width: "100%",
+                      fontSize: "8.5pt",
+                      borderCollapse: "collapse",
+                    }}
+                  >
+                    <tbody>
+                      <tr>
+                        <td
+                          style={{
+                            paddingBottom: "3pt",
+                            color: "#6b7280",
+                            width: "50%",
+                          }}
+                        >
+                          Invoice No.
+                        </td>
+                        <td
+                          style={{
+                            paddingBottom: "3pt",
+                            fontWeight: 600,
+                            textAlign: "right",
+                          }}
+                        >
+                          {invoice.billingNumber}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingBottom: "3pt", color: "#6b7280" }}>
+                          Date
+                        </td>
+                        <td
+                          style={{
+                            paddingBottom: "3pt",
+                            fontWeight: 600,
+                            textAlign: "right",
+                          }}
+                        >
+                          {formatDate(invoice.createdAt)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ color: "#6b7280" }}>Total Rooms</td>
+                        <td style={{ fontWeight: 600, textAlign: "right" }}>
+                          {rooms?.length ?? 0}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Room sections */}
+              {(() => {
+                let srCounter = 1;
+                return rooms?.map((room: Room) => {
+                  const itemCount = 0; // items loaded per room component
+                  const section = (
+                    <PrintRoomSection
+                      key={room.id.toString()}
+                      room={room}
+                      startIndex={srCounter}
+                    />
+                  );
+                  srCounter += itemCount;
+                  return section;
+                });
+              })()}
+
+              {/* Grand Total */}
+              <div
+                style={{
+                  borderTop: "2px solid #111827",
+                  marginTop: "8pt",
+                  paddingTop: "6pt",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <table style={{ fontSize: "10pt", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          paddingRight: "20pt",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Grand Total
+                      </td>
+                      <td
+                        style={{
+                          textAlign: "right",
+                          fontWeight: 800,
+                          fontSize: "13pt",
+                        }}
+                      >
+                        {formatINR(Number(invoice.grandTotal))}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer */}
+              <div
+                style={{
+                  marginTop: "20pt",
+                  paddingTop: "8pt",
+                  borderTop: "1px solid #e5e7eb",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "7.5pt",
+                  color: "#9ca3af",
+                }}
+              >
+                <span>Generated by Civil Invoice Manager</span>
+                <span>Thank you for your business!</span>
               </div>
             </div>
           </>

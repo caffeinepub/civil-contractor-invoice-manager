@@ -10,6 +10,7 @@ import InvoicesPage from "./pages/InvoicesPage";
 import LoginPage from "./pages/LoginPage";
 import NewClientPage from "./pages/NewClientPage";
 import NewInvoicePage from "./pages/NewInvoicePage";
+import SettingsPage from "./pages/SettingsPage";
 
 // Root route
 const rootRoute = createRootRoute({
@@ -107,6 +108,16 @@ const invoiceDetailRoute = createRoute({
   ),
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: () => (
+    <AuthGuardWrapper>
+      <SettingsPage />
+    </AuthGuardWrapper>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   dashboardRoute,
@@ -116,6 +127,7 @@ const routeTree = rootRoute.addChildren([
   newInvoiceRoute,
   invoicesRoute,
   invoiceDetailRoute,
+  settingsRoute,
 ]);
 
 const router = createRouter({ routeTree });
