@@ -8,20 +8,28 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import AppLayout from "../components/AppLayout";
+import { useActor } from "../hooks/useActor";
 import { useCreateClient } from "../hooks/useQueries";
 
 export default function NewClientPage() {
   const navigate = useNavigate();
+  const { actor, isFetching: actorLoading } = useActor();
   const createClient = useCreateClient();
 
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
 
+  const isReady = !!actor && !actorLoading;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !mobile.trim()) {
       toast.error("Name and mobile number are required");
+      return;
+    }
+    if (!isReady) {
+      toast.error("App is still loading. Please wait a moment and try again.");
       return;
     }
 
@@ -33,8 +41,9 @@ export default function NewClientPage() {
       });
       toast.success("Client added successfully");
       void navigate({ to: "/clients" });
-    } catch {
-      toast.error("Failed to add client. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to add client.";
+      toast.error(msg);
     }
   };
 
@@ -104,12 +113,12 @@ export default function NewClientPage() {
                   data-ocid="client_form.submit_button"
                   type="submit"
                   className="flex-1 h-11 font-semibold"
-                  disabled={createClient.isPending}
+                  disabled={createClient.isPending || !isReady}
                 >
-                  {createClient.isPending ? (
+                  {createClient.isPending || actorLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
+                      {actorLoading ? "Loading..." : "Saving..."}
                     </>
                   ) : (
                     "Save Client"

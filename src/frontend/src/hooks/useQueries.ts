@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Client, Invoice, Item, Room } from "../backend.d";
 import { useActor } from "./useActor";
 
+function requireActor(actor: ReturnType<typeof useActor>["actor"]) {
+  if (!actor)
+    throw new Error(
+      "App is still loading. Please wait a moment and try again.",
+    );
+  return actor;
+}
+
 // ── Clients ─────────────────────────────────────────────────────────────────
 
 export function useGetAllClients() {
@@ -37,8 +45,7 @@ export function useCreateClient() {
       mobile,
       address,
     }: { name: string; mobile: string; address: string }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.createClient(name, mobile, address);
+      return requireActor(actor).createClient(name, mobile, address);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -57,8 +64,7 @@ export function useUpdateClient() {
       mobile,
       address,
     }: { id: bigint; name: string; mobile: string; address: string }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.updateClient(id, name, mobile, address);
+      return requireActor(actor).updateClient(id, name, mobile, address);
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -72,8 +78,7 @@ export function useDeleteClient() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteClient(id);
+      return requireActor(actor).deleteClient(id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -113,8 +118,7 @@ export function useCreateInvoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (clientId: bigint) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.createInvoice(clientId);
+      return requireActor(actor).createInvoice(clientId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["invoices"] });
@@ -128,8 +132,7 @@ export function useDeleteInvoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteInvoice(id);
+      return requireActor(actor).deleteInvoice(id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["invoices"] });
@@ -160,8 +163,7 @@ export function useCreateRoom() {
       invoiceId,
       name,
     }: { invoiceId: bigint; name: string }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.createRoom(invoiceId, name);
+      return requireActor(actor).createRoom(invoiceId, name);
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["rooms", vars.invoiceId.toString()] });
@@ -174,8 +176,7 @@ export function useDeleteRoom() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: bigint; invoiceId: bigint }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteRoom(id);
+      return requireActor(actor).deleteRoom(id);
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["rooms", vars.invoiceId.toString()] });
@@ -214,8 +215,13 @@ export function useCreateItem() {
       unit: string;
       rate: number;
     }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.createItem(roomId, description, quantity, unit, rate);
+      return requireActor(actor).createItem(
+        roomId,
+        description,
+        quantity,
+        unit,
+        rate,
+      );
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["items", vars.roomId.toString()] });
@@ -243,8 +249,13 @@ export function useUpdateItem() {
       unit: string;
       rate: number;
     }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.updateItem(id, description, quantity, unit, rate);
+      return requireActor(actor).updateItem(
+        id,
+        description,
+        quantity,
+        unit,
+        rate,
+      );
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["items", vars.roomId.toString()] });
@@ -259,8 +270,7 @@ export function useDeleteItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: bigint; roomId: bigint }) => {
-      if (!actor) throw new Error("Actor not ready");
-      return actor.deleteItem(id);
+      return requireActor(actor).deleteItem(id);
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["items", vars.roomId.toString()] });

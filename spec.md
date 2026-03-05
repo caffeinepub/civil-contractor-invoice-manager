@@ -1,48 +1,34 @@
 # Civil Contractor Invoice Manager
 
 ## Current State
-New project. No existing code.
+The app uses a local password login (localStorage flag) rather than Internet Identity. The backend actor is created as an anonymous actor. All backend CRUD operations (`createClient`, `updateClient`, `deleteClient`, etc.) are `public shared` with no role checks, so they should accept anonymous callers.
+
+The `useActor` hook creates an anonymous actor immediately (since there is no II identity), but the actor query may fail silently or not be ready when mutation functions run. The `useCreateClient` mutation throws "Actor not ready" if `actor` is null, causing the "Failed to add client" error toast.
+
+Additionally, the `useActor` hook calls `_initializeAccessControlWithSecret` for authenticated (II) users but this app never uses II -- it uses a local password. So the access control initialization never runs and the backend's authorization module may reject calls if it traps on unknown principals.
+
+Looking at `access-control.mo`: `getUserRole` calls `Runtime.trap("User is not registered")` for principals not in the userRoles map (non-anonymous, non-registered). But for anonymous callers, it returns `#guest`. Since all `public shared` functions don't call `getUserRole`, anonymous calls should work.
+
+The actual issue: `createActorWithConfig()` may be throwing or the actor may be null/undefined at mutation time due to async initialization timing. The mutation has no retry and immediately surfaces the error to the user.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Hardcoded login screen (username: "Mikeee", password: "kuchbhi@123") with session stored in localStorage
-- Auth guard protecting all routes
-- Client management: create, read, edit, delete clients (name, mobile, address, billing number)
-- Room & area management: predefined room types (Bathroom, Kitchen, Living Room, Master Bedroom, Kids Bedroom, Terrace, Balcony) plus custom room name; multiple rooms of same type per invoice
-- Item entry per room: item name, quantity, unit (sq ft, sq mt, feet, meters, units, running ft, running mt), rate (₹), auto-calculated amount; full CRUD
-- Invoice creation flow: select client → add rooms → add items per room → review & save
-- Auto-generated billing number (format: INV-YYYY-XXXX)
-- Invoice list/history with client name, billing number, date, grand total
-- Invoice detail view: itemized breakdown by room, room subtotals, grand total
-- Print-friendly invoice layout (CSS print media query, shows client info, items by room, totals)
-- Dashboard: total clients count, total invoices count, total billing amount (₹)
-- Bottom navigation bar: Dashboard, Clients, New Invoice, Invoice History
+- Actor readiness state exposed from `useActor` hook
+- Loading indicator on submit button when actor is not yet ready
+- Retry logic in mutations when actor is not ready (wait and retry once)
 
 ### Modify
-Nothing (new project).
+- `useActor.ts`: Export `isReady` boolean that is true only when actor query has successfully resolved
+- `useQueries.ts` (`useCreateClient`, `useUpdateClient`, `useDeleteClient`): Add actor null-guard with a clear error that retries or waits
+- `NewClientPage.tsx`: Disable submit button with loading state if actor is not ready
+- `useActor.ts`: Fix potential issue where actor query could get stuck — add `retry: 3` to the query config
 
 ### Remove
-Nothing (new project).
+- Nothing removed
 
 ## Implementation Plan
-1. Backend (Motoko):
-   - Client record: id, name, mobile, address, billingNumber
-   - Room record: id, invoiceId, name (room type or custom)
-   - Item record: id, roomId, description, quantity, unit, rate, amount
-   - Invoice record: id, clientId, billingNumber, createdAt, status
-   - CRUD operations for clients, invoices, rooms, items
-   - Query: getInvoicesByClient, getAllInvoices, getInvoiceDetail (rooms + items)
-   - getDashboardStats returning client count, invoice count, total amount
-
-2. Frontend (React + TypeScript):
-   - Login page with hardcoded auth, session in localStorage
-   - AuthGuard wrapper for all protected routes
-   - Dashboard page with 3 stat cards
-   - Clients page: list, add/edit modal, delete confirm
-   - New Invoice page: multi-step flow (select client → add rooms → add items per room → preview)
-   - Invoice History page: list with search/filter
-   - Invoice Detail page: room-grouped breakdown + print button
-   - Print CSS: hide navigation, show clean invoice layout
-   - Bottom tab navigation (mobile-first)
-   - Units dropdown: sq ft, sq mt, feet, meters, units, running ft, running mt
+1. Update `useActor.ts` to add `isReady` export and add `retry: 3` to actor query
+2. Update `NewClientPage.tsx` to disable form submit when actor is not ready
+3. Update `EditClientPage.tsx` similarly
+4. Ensure all client mutations properly handle actor-not-ready state

@@ -11,6 +11,8 @@ import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
+
+
 actor {
   // Initialize the access control system
   let accessControlState = AccessControl.initState();
@@ -108,23 +110,14 @@ actor {
 
   // User Profile Operations
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
-    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
     userProfiles.add(caller, profile);
   };
 
@@ -135,9 +128,6 @@ actor {
 
   // Client Operations
   public shared ({ caller }) func createClient(name : Text, mobile : Text, address : Text) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create clients");
-    };
     if (name == "") { Runtime.trap("Name cannot be empty") };
     lastIdCounter += 1;
     let id = lastIdCounter;
@@ -154,9 +144,6 @@ actor {
   };
 
   public shared ({ caller }) func updateClient(id : Nat, name : Text, mobile : Text, address : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update clients");
-    };
     if (name == "") { Runtime.trap("Name cannot be empty") };
     switch (clients.get(id)) {
       case (null) { Runtime.trap("Client not found") };
@@ -175,9 +162,6 @@ actor {
   };
 
   public shared ({ caller }) func deleteClient(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete clients");
-    };
     switch (clients.get(id)) {
       case (null) { Runtime.trap("Client not found") };
       case (?_) {
@@ -187,9 +171,6 @@ actor {
   };
 
   public query ({ caller }) func getClient(id : Nat) : async Client {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view clients");
-    };
     switch (clients.get(id)) {
       case (null) { Runtime.trap("Client not found") };
       case (?client) { client };
@@ -197,17 +178,11 @@ actor {
   };
 
   public query ({ caller }) func getAllClients() : async [Client] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view clients");
-    };
     clients.values().toArray().sort();
   };
 
   // Invoice Operations
   public shared ({ caller }) func createInvoice(clientId : Nat) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create invoices");
-    };
     switch (clients.get(clientId)) {
       case (null) { Runtime.trap("Client does not exist") };
       case (?_) {
@@ -227,9 +202,6 @@ actor {
   };
 
   public shared ({ caller }) func updateInvoice(id : Nat, clientId : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update invoices");
-    };
     switch (invoices.get(id)) {
       case (null) { Runtime.trap("Invoice not found") };
       case (?invoice) {
@@ -251,9 +223,6 @@ actor {
   };
 
   public shared ({ caller }) func deleteInvoice(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete invoices");
-    };
     switch (invoices.get(id)) {
       case (null) { Runtime.trap("Invoice not found") };
       case (?_) {
@@ -263,9 +232,6 @@ actor {
   };
 
   public query ({ caller }) func getInvoice(id : Nat) : async Invoice {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view invoices");
-    };
     switch (invoices.get(id)) {
       case (null) { Runtime.trap("Invoice not found") };
       case (?invoice) { invoice };
@@ -273,16 +239,10 @@ actor {
   };
 
   public query ({ caller }) func getAllInvoices() : async [Invoice] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view invoices");
-    };
     invoices.values().toArray().sort();
   };
 
   public query ({ caller }) func getInvoicesByClientId(clientId : Nat) : async [Invoice] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view invoices");
-    };
     switch (clients.get(clientId)) {
       case (null) { Runtime.trap("Client does not exist") };
       case (?_) {
@@ -293,9 +253,6 @@ actor {
 
   // Room Operations
   public shared ({ caller }) func createRoom(invoiceId : Nat, name : Text) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create rooms");
-    };
     if (name == "") { Runtime.trap("Name cannot be empty") };
     switch (invoices.get(invoiceId)) {
       case (null) { Runtime.trap("Invoice does not exist") };
@@ -315,9 +272,6 @@ actor {
   };
 
   public shared ({ caller }) func updateRoom(id : Nat, name : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update rooms");
-    };
     if (name == "") { Runtime.trap("Name cannot be empty") };
     switch (rooms.get(id)) {
       case (null) { Runtime.trap("Room not found") };
@@ -334,9 +288,6 @@ actor {
   };
 
   public shared ({ caller }) func deleteRoom(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete rooms");
-    };
     switch (rooms.get(id)) {
       case (null) { Runtime.trap("Room not found") };
       case (?_) {
@@ -346,9 +297,6 @@ actor {
   };
 
   public query ({ caller }) func getRoom(id : Nat) : async Room {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view rooms");
-    };
     switch (rooms.get(id)) {
       case (null) { Runtime.trap("Room not found") };
       case (?room) { room };
@@ -356,9 +304,6 @@ actor {
   };
 
   public query ({ caller }) func getRoomsByInvoiceId(invoiceId : Nat) : async [Room] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view rooms");
-    };
     switch (invoices.get(invoiceId)) {
       case (null) { Runtime.trap("Invoice does not exist") };
       case (?_) {
@@ -369,9 +314,6 @@ actor {
 
   // Item Operations
   public shared ({ caller }) func createItem(roomId : Nat, description : Text, quantity : Float, unit : Text, rate : Float) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create items");
-    };
     if (description == "") { Runtime.trap("Description cannot be empty") };
     switch (rooms.get(roomId)) {
       case (null) { Runtime.trap("Room does not exist") };
@@ -395,9 +337,6 @@ actor {
   };
 
   public shared ({ caller }) func updateItem(id : Nat, description : Text, quantity : Float, unit : Text, rate : Float) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update items");
-    };
     if (description == "") { Runtime.trap("Description cannot be empty") };
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
@@ -418,9 +357,6 @@ actor {
   };
 
   public shared ({ caller }) func deleteItem(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete items");
-    };
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
       case (?_) {
@@ -430,9 +366,6 @@ actor {
   };
 
   public query ({ caller }) func getItem(id : Nat) : async Item {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view items");
-    };
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
       case (?item) { item };
@@ -440,9 +373,6 @@ actor {
   };
 
   public query ({ caller }) func getItemsByRoomId(roomId : Nat) : async [Item] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view items");
-    };
     switch (rooms.get(roomId)) {
       case (null) { Runtime.trap("Room does not exist") };
       case (?_) {
@@ -451,15 +381,12 @@ actor {
     };
   };
 
-  // Dashboard Stats - Admin only (sensitive business data)
+  // Dashboard Stats
   public query ({ caller }) func getDashboardStats() : async {
     totalClients : Nat;
     totalInvoices : Nat;
     totalBillingAmount : Float;
   } {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view dashboard stats");
-    };
     {
       totalClients = clients.size();
       totalInvoices = invoices.size();

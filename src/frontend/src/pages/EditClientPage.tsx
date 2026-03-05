@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AppLayout from "../components/AppLayout";
+import { useActor } from "../hooks/useActor";
 import { useGetClient, useUpdateClient } from "../hooks/useQueries";
 
 export default function EditClientPage() {
@@ -16,8 +17,10 @@ export default function EditClientPage() {
   const { id } = useParams({ strict: false }) as { id?: string };
   const clientId = id ? BigInt(id) : null;
 
+  const { actor, isFetching: actorLoading } = useActor();
   const { data: client, isLoading } = useGetClient(clientId);
   const updateClient = useUpdateClient();
+  const isReady = !!actor && !actorLoading;
 
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -38,6 +41,11 @@ export default function EditClientPage() {
       return;
     }
 
+    if (!isReady) {
+      toast.error("App is still loading. Please wait a moment and try again.");
+      return;
+    }
+
     try {
       await updateClient.mutateAsync({
         id: clientId,
@@ -47,8 +55,10 @@ export default function EditClientPage() {
       });
       toast.success("Client updated successfully");
       void navigate({ to: "/clients" });
-    } catch {
-      toast.error("Failed to update client. Please try again.");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to update client.";
+      toast.error(msg);
     }
   };
 
@@ -129,12 +139,12 @@ export default function EditClientPage() {
                     data-ocid="client_form.submit_button"
                     type="submit"
                     className="flex-1 h-11 font-semibold"
-                    disabled={updateClient.isPending}
+                    disabled={updateClient.isPending || !isReady}
                   >
-                    {updateClient.isPending ? (
+                    {updateClient.isPending || actorLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
+                        {actorLoading ? "Loading..." : "Updating..."}
                       </>
                     ) : (
                       "Update Client"
