@@ -1,51 +1,34 @@
 # Civil Contractor Invoice Manager
 
 ## Current State
-- Single hardcoded user login (username: Mikeee, password: kuchbhi@123)
-- All data stored in backend shared globally (no user isolation)
-- localStorage key `cim_auth` = "true" on login
-- Document types stored in localStorage under `cim_document_types`
-- Company settings stored in localStorage under `cim_company_*`
-- Dashboard hardcodes "Welcome, Mikeee"
-- Backend uses anonymous Principal for all callers (no Internet Identity)
+- User accounts are hardcoded in `src/frontend/src/utils/auth.ts` as a static `USERS` array
+- Three users exist: Mikeee (admin), User2 (user), User3 (user)
+- Roles are enforced via localStorage; admin sees all data, regular users see only their own
+- Settings page only handles company profile (logo, name, address)
+- No way to add, delete, or edit users from the UI
 
 ## Requested Changes (Diff)
 
 ### Add
-- Multi-user account system with hardcoded user list:
-  - Mikeee / kuchbhi@123 (role: admin)
-  - At least one more regular user account (e.g. User2 / user2@123, role: user)
-- Store logged-in username in localStorage as `cim_user`
-- Store logged-in user role in localStorage as `cim_role`
-- Per-user data namespacing: all localStorage keys that store per-user data (cim_document_types, cim_company_*) must be prefixed with the username, e.g. `cim_document_types_Mikeee`
-- Admin user (Mikeee) sees all clients and invoices from the backend (getAllClients, getAllInvoices)
-- Regular users see only data they created -- tracked by storing a per-user owned-IDs list in localStorage: `cim_owned_clients_<username>` and `cim_owned_invoices_<username>` (arrays of ID strings)
-- When a regular user creates a client or invoice, add the returned ID to their owned list
-- When fetching clients/invoices for a regular user, filter the full list to only IDs in their owned list
-- Dashboard "Welcome, <username>" shows the logged-in username dynamically
-- User badge/label in AppLayout header showing logged-in username and role
-- Logout clears `cim_auth`, `cim_user`, `cim_role` from localStorage
+- "User Management" section in Settings page, visible only to admin
+- Admin can add new regular users (username + password)
+- Admin can edit any regular user's username and password
+- Admin can delete any regular user
+- Users list persisted in localStorage so changes survive page reloads
 
 ### Modify
-- LoginPage: support the multi-user account list; on successful login store cim_user and cim_role; show username in the form/header
-- DashboardPage: replace hardcoded "Welcome, Mikeee" with dynamic username from localStorage
-- AppLayout: show current username + role badge in header; add logout option
-- useCreateClient mutation: on success, if user is not admin, add new client ID to `cim_owned_clients_<username>`
-- useGetAllClients query: if user is admin return all; else filter by owned IDs
-- useCreateInvoice mutation: on success, if user is not admin, add new invoice ID to `cim_owned_invoices_<username>`
-- useGetAllInvoices query: if user is admin return all; else filter by owned IDs
-- documentType utils: namespace localStorage key by username
-- companyProfile utils: namespace localStorage keys by username
+- `auth.ts`: Change USERS from a hardcoded constant to a localStorage-backed mutable store; seed defaults on first load; expose CRUD helpers (getUsers, addUser, updateUser, deleteUser)
+- `SettingsPage.tsx`: Add a "User Management" section below company profile, shown only when `isAdmin()` is true
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Create a `src/utils/auth.ts` helper: USERS list, login(), logout(), getCurrentUser(), getCurrentRole(), isAdmin(), getOwnedClientIds(), addOwnedClientId(), getOwnedInvoiceIds(), addOwnedInvoiceId()
-2. Update LoginPage to use the USERS list and store cim_user + cim_role
-3. Update DashboardPage to read username from localStorage dynamically
-4. Update AppLayout to show username/role badge and logout button
-5. Update useGetAllClients and useCreateClient to apply per-user filtering/tracking
-6. Update useGetAllInvoices and useCreateInvoice to apply per-user filtering/tracking
-7. Update documentType.ts to namespace by username
-8. Update companyProfile.ts to namespace by username
+1. Extend `auth.ts` with localStorage-persisted user store and CRUD functions (getUsers, addUser, updateUser, deleteUser); keep login() reading from live store
+2. Add User Management UI to SettingsPage:
+   - List all regular users (not admin) with edit and delete buttons per row
+   - Inline edit form: username + password fields, save/cancel
+   - "Add User" form at the bottom: username + password, add button
+   - Prevent deleting or editing the admin account (Mikeee)
+   - Validate: no empty username/password, no duplicate usernames
+3. Apply deterministic data-ocid markers to all interactive elements

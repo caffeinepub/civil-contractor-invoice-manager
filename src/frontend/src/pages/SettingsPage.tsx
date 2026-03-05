@@ -1,12 +1,408 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, ImagePlus, Loader2, Save, Trash2 } from "lucide-react";
+import {
+  Building2,
+  Eye,
+  EyeOff,
+  ImagePlus,
+  Loader2,
+  Save,
+  Trash2,
+  UserCog,
+  UserPlus,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import AppLayout from "../components/AppLayout";
+import {
+  type UserAccount,
+  addUser,
+  deleteUser,
+  getUsers,
+  isAdmin,
+  updateUser,
+} from "../utils/auth";
 import { getCompanyProfile, saveCompanyProfile } from "../utils/companyProfile";
+
+// ─── User Management ──────────────────────────────────────────────────────────
+
+interface EditState {
+  username: string;
+  password: string;
+  showPassword: boolean;
+}
+
+function UserManagementSection() {
+  const [users, setUsers] = useState<UserAccount[]>(() =>
+    getUsers().filter((u) => u.role !== "admin"),
+  );
+
+  // Add-user form state
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
+  // Per-row edit state: key = original username
+  const [editingRow, setEditingRow] = useState<string | null>(null);
+  const [editState, setEditState] = useState<EditState>({
+    username: "",
+    password: "",
+    showPassword: false,
+  });
+
+  // Confirm-delete state
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const refreshUsers = () => {
+    setUsers(getUsers().filter((u) => u.role !== "admin"));
+  };
+
+  const handleStartEdit = (user: UserAccount) => {
+    setEditingRow(user.username);
+    setEditState({
+      username: user.username,
+      password: user.password,
+      showPassword: false,
+    });
+    setConfirmDelete(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRow(null);
+    setEditState({ username: "", password: "", showPassword: false });
+  };
+
+  const handleSaveEdit = (originalUsername: string) => {
+    if (!editState.username.trim()) {
+      toast.error("Username cannot be empty");
+      return;
+    }
+    if (!editState.password.trim()) {
+      toast.error("Password cannot be empty");
+      return;
+    }
+    const result = updateUser(
+      originalUsername,
+      editState.username.trim(),
+      editState.password.trim(),
+    );
+    if (result.ok) {
+      toast.success("User updated successfully");
+      handleCancelEdit();
+      refreshUsers();
+    } else {
+      toast.error(result.error ?? "Failed to update user");
+    }
+  };
+
+  const handleDeleteConfirm = (username: string) => {
+    const result = deleteUser(username);
+    if (result.ok) {
+      toast.success("User deleted");
+      setConfirmDelete(null);
+      refreshUsers();
+    } else {
+      toast.error(result.error ?? "Failed to delete user");
+    }
+  };
+
+  const handleAddUser = () => {
+    if (!newUsername.trim()) {
+      toast.error("Username cannot be empty");
+      return;
+    }
+    if (!newPassword.trim()) {
+      toast.error("Password cannot be empty");
+      return;
+    }
+    setIsAdding(true);
+    const result = addUser(newUsername.trim(), newPassword.trim());
+    setIsAdding(false);
+    if (result.ok) {
+      toast.success(`User "${newUsername.trim()}" added`);
+      setNewUsername("");
+      setNewPassword("");
+      setShowNewPassword(false);
+      refreshUsers();
+    } else {
+      toast.error(result.error ?? "Failed to add user");
+    }
+  };
+
+  return (
+    <section data-ocid="user_mgmt.section" className="space-y-4">
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <UserCog className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h2 className="font-display font-semibold text-base text-foreground">
+            User Management
+          </h2>
+          <p className="text-muted-foreground text-xs">
+            Add, edit, or remove regular user accounts
+          </p>
+        </div>
+      </div>
+
+      {/* User list */}
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        {users.length === 0 ? (
+          <div
+            data-ocid="user_mgmt.empty_state"
+            className="py-10 text-center text-muted-foreground text-sm"
+          >
+            No regular users yet. Add one below.
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {users.map((user, idx) => {
+              const rowNum = idx + 1;
+              const isEditing = editingRow === user.username;
+              const isConfirmingDelete = confirmDelete === user.username;
+
+              return (
+                <li
+                  key={user.username}
+                  data-ocid={`user_mgmt.item.${rowNum}`}
+                  className="px-4 py-3 space-y-3"
+                >
+                  {/* User row header */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-primary uppercase">
+                          {user.username.slice(0, 2)}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {user.username}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Regular User
+                        </p>
+                      </div>
+                    </div>
+
+                    {!isEditing && !isConfirmingDelete && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`user_mgmt.edit_button.${rowNum}`}
+                          onClick={() => handleStartEdit(user)}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`user_mgmt.delete_button.${rowNum}`}
+                          onClick={() => setConfirmDelete(user.username)}
+                          className="h-8 px-3 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Inline edit form */}
+                  {isEditing && (
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Username</Label>
+                        <Input
+                          data-ocid={`user_mgmt.edit_username_input.${rowNum}`}
+                          value={editState.username}
+                          onChange={(e) =>
+                            setEditState((prev) => ({
+                              ...prev,
+                              username: e.target.value,
+                            }))
+                          }
+                          placeholder="Username"
+                          className="h-9 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Password</Label>
+                        <div className="relative">
+                          <Input
+                            data-ocid={`user_mgmt.edit_password_input.${rowNum}`}
+                            type={editState.showPassword ? "text" : "password"}
+                            value={editState.password}
+                            onChange={(e) =>
+                              setEditState((prev) => ({
+                                ...prev,
+                                password: e.target.value,
+                              }))
+                            }
+                            placeholder="New password"
+                            className="h-9 text-sm pr-10"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter")
+                                handleSaveEdit(user.username);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditState((prev) => ({
+                                ...prev,
+                                showPassword: !prev.showPassword,
+                              }))
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {editState.showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          data-ocid={`user_mgmt.save_button.${rowNum}`}
+                          onClick={() => handleSaveEdit(user.username)}
+                          className="h-8 px-4 text-xs font-semibold"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`user_mgmt.cancel_button.${rowNum}`}
+                          onClick={handleCancelEdit}
+                          className="h-8 px-4 text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Confirm delete */}
+                  {isConfirmingDelete && (
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 space-y-2">
+                      <p className="text-xs text-destructive font-medium">
+                        Delete user "{user.username}"? This cannot be undone.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          data-ocid="user_mgmt.confirm_button"
+                          onClick={() => handleDeleteConfirm(user.username)}
+                          className="h-8 px-4 text-xs font-semibold"
+                        >
+                          Delete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`user_mgmt.cancel_button.${rowNum}`}
+                          onClick={() => setConfirmDelete(null)}
+                          className="h-8 px-4 text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {/* Add new user form */}
+      <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <UserPlus className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-foreground">Add New User</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-username" className="text-xs font-medium">
+              Username
+            </Label>
+            <Input
+              id="new-username"
+              data-ocid="user_mgmt.add_username_input"
+              placeholder="e.g., Ramesh"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-password" className="text-xs font-medium">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="new-password"
+                data-ocid="user_mgmt.add_password_input"
+                type={showNewPassword ? "text" : "password"}
+                placeholder="Set a password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="h-10 pr-10"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddUser();
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showNewPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+        <Button
+          data-ocid="user_mgmt.add_button"
+          onClick={handleAddUser}
+          disabled={isAdding}
+          className="w-full h-10 font-semibold text-sm"
+        >
+          {isAdding ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            <>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add User
+            </>
+          )}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+// ─── Settings Page ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const profile = getCompanyProfile();
@@ -205,6 +601,14 @@ export default function SettingsPage() {
             </>
           )}
         </Button>
+
+        {/* User Management – admin only */}
+        {isAdmin() && (
+          <>
+            <Separator className="my-2" />
+            <UserManagementSection />
+          </>
+        )}
       </div>
     </AppLayout>
   );
