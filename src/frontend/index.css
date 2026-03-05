@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/assets/fonts/PlusJakartaSans[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("/assets/fonts/Figtree[wght].woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Teal-focused professional palette for civil contractor app */
+    --background: 0.975 0.005 210;
+    --foreground: 0.16 0.025 250;
+
+    --card: 1 0 0;
+    --card-foreground: 0.16 0.025 250;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.16 0.025 250;
+
+    /* Deep teal primary */
+    --primary: 0.42 0.12 195;
+    --primary-foreground: 0.99 0 0;
+
+    --secondary: 0.93 0.015 210;
+    --secondary-foreground: 0.3 0.04 210;
+
+    --muted: 0.94 0.01 220;
+    --muted-foreground: 0.52 0.025 220;
+
+    /* Warm amber accent */
+    --accent: 0.88 0.04 210;
+    --accent-foreground: 0.25 0.05 210;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.88 0.012 220;
+    --input: 0.88 0.012 220;
+    --ring: 0.42 0.12 195;
+
+    /* Success green */
+    --success: 0.52 0.14 155;
+    --success-foreground: 0.99 0 0;
+
+    /* Warning amber */
+    --warning: 0.72 0.18 65;
+    --warning-foreground: 0.15 0.04 65;
+
+    --chart-1: 0.42 0.12 195;
+    --chart-2: 0.6 0.118 184.704;
+    --chart-3: 0.52 0.14 155;
+    --chart-4: 0.72 0.18 65;
+    --chart-5: 0.577 0.245 27.325;
+
+    --sidebar: 0.985 0 0;
+    --sidebar-foreground: 0.145 0 0;
+    --sidebar-primary: 0.42 0.12 195;
+    --sidebar-primary-foreground: 0.985 0 0;
+    --sidebar-accent: 0.93 0.015 210;
+    --sidebar-accent-foreground: 0.3 0.04 210;
+    --sidebar-border: 0.88 0.012 220;
+    --sidebar-ring: 0.42 0.12 195;
+  }
+
+  .dark {
+    --background: 0.12 0.02 240;
+    --foreground: 0.97 0.01 210;
+    --card: 0.16 0.025 240;
+    --card-foreground: 0.97 0.01 210;
+    --popover: 0.18 0.025 240;
+    --popover-foreground: 0.97 0.01 210;
+    --primary: 0.62 0.14 195;
+    --primary-foreground: 0.08 0.02 210;
+    --secondary: 0.22 0.03 240;
+    --secondary-foreground: 0.9 0.01 210;
+    --muted: 0.22 0.03 240;
+    --muted-foreground: 0.65 0.02 220;
+    --accent: 0.25 0.04 240;
+    --accent-foreground: 0.9 0.01 210;
+    --destructive: 0.704 0.191 22.216;
+    --destructive-foreground: 0.205 0 0;
+    --border: 1 0 0 / 10%;
+    --input: 1 0 0 / 15%;
+    --ring: 0.62 0.14 195;
+    --chart-1: 0.62 0.14 195;
+    --chart-2: 0.696 0.17 162.48;
+    --chart-3: 0.52 0.14 155;
+    --chart-4: 0.72 0.18 65;
+    --chart-5: 0.704 0.191 22.216;
+    --sidebar: 0.16 0.025 240;
+    --sidebar-foreground: 0.97 0.01 210;
+    --sidebar-primary: 0.62 0.14 195;
+    --sidebar-primary-foreground: 0.08 0.02 210;
+    --sidebar-accent: 0.22 0.03 240;
+    --sidebar-accent-foreground: 0.9 0.01 210;
+    --sidebar-border: 1 0 0 / 10%;
+    --sidebar-ring: 0.62 0.14 195;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .font-body {
+    font-family: "Figtree", sans-serif;
+  }
+}
+
+/* Mobile app container */
+.app-container {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* Bottom nav safe area */
+.bottom-nav-spacer {
+  height: 80px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    font-size: 12px;
+  }
+
+  .app-container {
+    max-width: 100%;
+  }
+
+  .print-invoice {
+    padding: 16px;
+  }
+}
+
+/* Input font-size for iOS zoom prevention */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Smooth card hover */
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -4px oklch(0.42 0.12 195 / 0.15);
+}
