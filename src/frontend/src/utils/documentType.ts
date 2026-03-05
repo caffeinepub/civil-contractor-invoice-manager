@@ -1,10 +1,14 @@
+import { getCurrentUser } from "./auth";
+
 export type DocumentType = "Invoice" | "Quotation";
 
-const KEY = "cim_document_types";
+function getKey(): string {
+  return `cim_document_types_${getCurrentUser()}`;
+}
 
 function loadMap(): Record<string, DocumentType> {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(getKey());
     if (raw) return JSON.parse(raw) as Record<string, DocumentType>;
   } catch {
     // ignore
@@ -13,7 +17,7 @@ function loadMap(): Record<string, DocumentType> {
 }
 
 function saveMap(map: Record<string, DocumentType>): void {
-  localStorage.setItem(KEY, JSON.stringify(map));
+  localStorage.setItem(getKey(), JSON.stringify(map));
 }
 
 export function getDocumentType(invoiceId: string | bigint): DocumentType {

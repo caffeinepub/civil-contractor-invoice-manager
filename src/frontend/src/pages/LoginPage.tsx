@@ -6,9 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertCircle, Eye, EyeOff, HardHat, Loader2 } from "lucide-react";
 import { useState } from "react";
-
-const VALID_USERNAME = "Mikeee";
-const VALID_PASSWORD = "kuchbhi@123";
+import { login } from "../utils/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,8 +23,8 @@ export default function LoginPage() {
 
     await new Promise((r) => setTimeout(r, 600));
 
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      localStorage.setItem("cim_auth", "true");
+    const account = login(username, password);
+    if (account) {
       void navigate({ to: "/" });
     } else {
       setError("Invalid username or password. Please try again.");

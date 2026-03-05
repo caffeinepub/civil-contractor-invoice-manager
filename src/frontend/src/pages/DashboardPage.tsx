@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import AppLayout from "../components/AppLayout";
 import { useGetDashboardStats } from "../hooks/useQueries";
+import { getCurrentRole, getCurrentUser } from "../utils/auth";
 import { formatINR } from "../utils/format";
 
 function StatCard({
@@ -58,6 +60,8 @@ function StatCard({
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { data: stats, isLoading } = useGetDashboardStats();
+  const currentUser = getCurrentUser();
+  const currentRole = getCurrentRole();
 
   const totalClients = stats ? Number(stats.totalClients) : 0;
   const totalInvoices = stats ? Number(stats.totalInvoices) : 0;
@@ -77,7 +81,20 @@ export default function DashboardPage() {
                 Business Overview
               </span>
             </div>
-            <h2 className="font-display font-bold text-xl">Welcome, Mikeee</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-display font-bold text-xl">
+                Welcome, {currentUser}
+              </h2>
+              <Badge
+                className={
+                  currentRole === "admin"
+                    ? "bg-amber-400/30 text-amber-100 border-amber-300/30 text-xs font-semibold"
+                    : "bg-blue-400/30 text-blue-100 border-blue-300/30 text-xs font-semibold"
+                }
+              >
+                {currentRole === "admin" ? "Admin" : "User"}
+              </Badge>
+            </div>
             <p className="text-sm opacity-80 mt-0.5">
               {isLoading
                 ? "Loading your stats..."

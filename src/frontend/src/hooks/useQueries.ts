@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Client, Invoice, Item, Room } from "../backend.d";
+import {
+  addOwnedClientId,
+  addOwnedInvoiceId,
+  getOwnedClientIds,
+  getOwnedInvoiceIds,
+  isAdmin,
+} from "../utils/auth";
 import { useActor } from "./useActor";
 
 function requireActor(actor: ReturnType<typeof useActor>["actor"]) {
@@ -18,7 +25,10 @@ export function useGetAllClients() {
     queryKey: ["clients"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllClients();
+      const all = await actor.getAllClients();
+      if (isAdmin()) return all;
+      const owned = getOwnedClientIds();
+      return all.filter((c) => owned.includes(c.id.toString()));
     },
     enabled: !!actor && !isFetching,
   });
@@ -47,7 +57,8 @@ export function useCreateClient() {
     }: { name: string; mobile: string; address: string }) => {
       return requireActor(actor).createClient(name, mobile, address);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      addOwnedClientId(data.toString());
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
@@ -95,7 +106,10 @@ export function useGetAllInvoices() {
     queryKey: ["invoices"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllInvoices();
+      const all = await actor.getAllInvoices();
+      if (isAdmin()) return all;
+      const owned = getOwnedInvoiceIds();
+      return all.filter((inv) => owned.includes(inv.id.toString()));
     },
     enabled: !!actor && !isFetching,
   });
@@ -120,7 +134,8 @@ export function useCreateInvoice() {
     mutationFn: async (clientId: bigint) => {
       return requireActor(actor).createInvoice(clientId);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      addOwnedInvoiceId(data.toString());
       qc.invalidateQueries({ queryKey: ["invoices"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },

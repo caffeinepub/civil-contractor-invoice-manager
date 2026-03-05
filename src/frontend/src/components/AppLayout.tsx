@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { getCurrentRole, getCurrentUser, logout } from "../utils/auth";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -54,9 +55,11 @@ export default function AppLayout({
 }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = getCurrentUser();
+  const currentRole = getCurrentRole();
 
   const handleLogout = () => {
-    localStorage.removeItem("cim_auth");
+    logout();
     void navigate({ to: "/login" });
   };
 
@@ -110,6 +113,21 @@ export default function AppLayout({
           <h1 className="flex-1 font-display font-semibold text-base text-foreground truncate">
             {title}
           </h1>
+          {currentUser && (
+            <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium border border-border/60 shrink-0">
+              <span className="text-foreground/80">{currentUser}</span>
+              <span className="text-muted-foreground/60">•</span>
+              <span
+                className={
+                  currentRole === "admin"
+                    ? "text-amber-600 dark:text-amber-400 font-semibold"
+                    : "text-blue-600 dark:text-blue-400 font-semibold"
+                }
+              >
+                {currentRole === "admin" ? "Admin" : "User"}
+              </span>
+            </span>
+          )}
           {rightAction}
           {!rightAction && (
             <Button
@@ -118,6 +136,7 @@ export default function AppLayout({
               onClick={handleLogout}
               className="text-muted-foreground hover:text-destructive h-9 w-9"
               aria-label="Logout"
+              data-ocid="nav.logout_button"
             >
               <LogOut className="h-4 w-4" />
             </Button>
