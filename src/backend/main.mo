@@ -11,8 +11,6 @@ import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
-
-
 actor {
   // Initialize the access control system
   let accessControlState = AccessControl.initState();
@@ -110,14 +108,23 @@ actor {
 
   // User Profile Operations
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access profiles");
+    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
     userProfiles.add(caller, profile);
   };
 
@@ -312,8 +319,22 @@ actor {
     };
   };
 
-  // Item Operations
+  // Item Operations (with automatic subtotals/grandTotals recalculation)
   public shared ({ caller }) func createItem(roomId : Nat, description : Text, quantity : Float, unit : Text, rate : Float) : async Nat {
+    let id = await createItemInternal(roomId, description, quantity, unit, rate, true);
+    id;
+  };
+
+  public shared ({ caller }) func updateItem(id : Nat, description : Text, quantity : Float, unit : Text, rate : Float) : async () {
+    updateItemInternal(id, description, quantity, unit, rate, true);
+  };
+
+  public shared ({ caller }) func deleteItem(id : Nat) : async () {
+    deleteItemInternal(id, true);
+  };
+
+  /// Internal item creation logic.
+  func createItemInternal(roomId : Nat, description : Text, quantity : Float, unit : Text, rate : Float, recalculateTotals : Bool) : async Nat {
     if (description == "") { Runtime.trap("Description cannot be empty") };
     switch (rooms.get(roomId)) {
       case (null) { Runtime.trap("Room does not exist") };
@@ -331,12 +352,13 @@ actor {
           amount;
         };
         items.add(id, item);
+        if (recalculateTotals) { recalculateRoomAndInvoiceTotals(roomId) };
         id;
       };
     };
   };
 
-  public shared ({ caller }) func updateItem(id : Nat, description : Text, quantity : Float, unit : Text, rate : Float) : async () {
+  func updateItemInternal(id : Nat, description : Text, quantity : Float, unit : Text, rate : Float, recalculateTotals : Bool) {
     if (description == "") { Runtime.trap("Description cannot be empty") };
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
@@ -352,15 +374,45 @@ actor {
           amount;
         };
         items.add(id, updatedItem);
+        if (recalculateTotals) { recalculateRoomAndInvoiceTotals(item.roomId) };
       };
     };
   };
 
-  public shared ({ caller }) func deleteItem(id : Nat) : async () {
+  func deleteItemInternal(id : Nat, recalculateTotals : Bool) {
     switch (items.get(id)) {
       case (null) { Runtime.trap("Item not found") };
-      case (?_) {
+      case (?item) {
         items.remove(id);
+        if (recalculateTotals) { recalculateRoomAndInvoiceTotals(item.roomId) };
+      };
+    };
+  };
+
+  /// Recalculate subtotal for a room and grandTotal for corresponding invoice.
+  func recalculateRoomAndInvoiceTotals(roomId : Nat) {
+    switch (rooms.get(roomId)) {
+      case (null) {};
+      case (?room) {
+        let newSubtotal = items.values().toArray().filter(func(item) { item.roomId == roomId }).foldLeft(0.0, func(acc, item) { acc + item.amount });
+        let updatedRoom : Room = {
+          room with
+          subtotal = newSubtotal;
+        };
+        rooms.add(room.id, updatedRoom);
+
+        let invoiceId = room.invoiceId;
+        switch (invoices.get(invoiceId)) {
+          case (null) {};
+          case (?invoice) {
+            let newGrandTotal = rooms.values().toArray().filter(func(r) { r.invoiceId == invoiceId }).foldLeft(0.0, func(acc, r) { acc + r.subtotal });
+            let updatedInvoice : Invoice = {
+              invoice with
+              grandTotal = newGrandTotal;
+            };
+            invoices.add(invoice.id, updatedInvoice);
+          };
+        };
       };
     };
   };
